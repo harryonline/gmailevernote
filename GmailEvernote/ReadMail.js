@@ -1,7 +1,7 @@
-﻿/**
+/**
 * ---GMail to Evernote---
 *
-*  Copyright (c) 2012 Harry Oosterveen
+*  Copyright (c) 2012,2013,2018 Harry Oosterveen
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
 /**
 *  @author  Harry Oosterveen <mail@harryonline.net>
-*  @version 3
+*  @version 8
 *  @since   2012-11-12
 */
 
@@ -29,13 +29,13 @@
 *  See https://support.evernote.com/ics/support/KBAnswer.asp?questionID=547
 */
 
-var version = 3;
+var version = 8;
 // Variables for user properties
 var evernoteMail, cfg={};
 // Sheet for log entries
 var logSheet;
 // Email of user
-var userMail = Session.getEffectiveUser().getEmail();
+var userMail = Session.getActiveUser().getEmail();
 var webInterface = false;
 
 function readEvernote()
@@ -62,60 +62,71 @@ function readEvernote()
         // Get threads
         var threads = labels[i].getThreads();
         for( var j=0;  j < threads.length;j ++ ) {
-          // Read last mail
           var subject = threads[j].getFirstMessageSubject();
+          // Read last mail
           var lastMsg = threads[j].getMessages().pop();
-          if( labelPath.length > 1 ) {
-            // Add label name (last element) as inbox
-            subject += ' @' + labelPath[labelPath.length-1];
-          }
-          if( cfg.tag != '' ) {
-            subject += ' #' + cfg.tag;
-          }
-          // Read tags from mail
-          var msgLabels = threads[j].getLabels();
-          for( var k=0; k < msgLabels.length; k ++ ) {
-            var msgLabelPath = msgLabels[k].getName().split('/');
-            if( msgLabelPath[0] != cfg.nbk_label && 
-               msgLabels[k].getName() != cfg.sent_label && 
-              ( cfg.tag_label == '' || msgLabelPath[0] == cfg.tag_label ) ) {
-                subject += ' #' + msgLabelPath.pop();
+          if( lastMsg.getTo() != evernoteMail ) {
+            if( labelPath.length > 1 ) {
+              // Add label name (last element) as inbox
+              subject += ' @' + labelPath[labelPath.length-1];
+            }
+            if( cfg.tag != '' ) {
+              subject += ' #' + cfg.tag;
+            }
+            // Read tags from mail
+            var msgLabels = threads[j].getLabels();
+            for( var k=0; k < msgLabels.length; k ++ ) {
+              var msgLabelPath = msgLabels[k].getName().split('/');
+              if( msgLabelPath[0] != cfg.nbk_label && 
+                 msgLabels[k].getName() != cfg.sent_label && 
+                ( cfg.tag_label == '' || msgLabelPath[0] == cfg.tag_label ) ) {
+                  subject += ' #' + msgLabelPath.pop();
+                }
+            }
+            // Put header info and link(s) before message body
+            var fields = cfg.fields.toLowerCase().split(/[, ]+/);
+            var header = '';
+            for( var f=0; f < fields.length;  f ++ ) {
+              var fldName = hdrFields[fields[f]];
+              if( fldName != undefined ) {
+                eval( sprintf_( 'var fldValue = lastMsg.get%s();', fldName));
+                if( fldValue != '' ) {
+                  header += sprintf_( "%s: %s\n", fldName, fldValue );
+                }
               }
-          }
-          // Put header info and link(s) before message body
-          var fields = cfg.fields.toLowerCase().split(/[, ]+/);
-          var header = '';
-          for( var f=0; f < fields.length;  f ++ ) {
-            var fldName = hdrFields[fields[f]];
-            if( fldName != undefined ) {
-              eval( sprintf_( 'var fldValue = lastMsg.get%s();', fldName));
-              if( fldValue != '' ) {
-                header += sprintf_( "%s: %s\n", fldName, fldValue );
+            }
+            header = htmlEncode_( header );
+            
+            var msgId = lastMsg.getId();
+            if( cfg.nacct > 0 ) {
+              header += createLink_(mailUrl_( msgId, 0 )) ;
+              for( var u=1; u < cfg.nacct; u ++ ) {
+                header += ' - ' + createLink_( mailUrl_( msgId, u ), 'user '+ u );
+              }
+              header += sprintf_( " (%s)\n", userMail );
+            }
+            if( header != '' ) {
+              header = sprintf_( '<div style="%s">%s</div>', cfg.hdrcss, header.replace( /\n/g, "<br/>" ));
+            }
+            var body = header + getBody(lastMsg)
+            GmailApp.sendEmail(evernoteMail, subject, '', {htmlBody:body, attachments:lastMsg.getAttachments() })
+            log_( subject );
+            if( sentLabel != undefined ) {
+              threads[j].addLabel(sentLabel);
+            }
+            if( cfg.keep_sent == 'off' ) {
+              // Remove message just sent to Evernote
+              var sentResults = GmailApp.search("label:sent " + subject, 0, 1);
+              if( sentResults.length > 0 ) {
+                var sentMsg = sentResults[0].getMessages().pop();
+                if( sentMsg.getTo() == evernoteMail ) {
+                  sentMsg.moveToTrash();
+                }
               }
             }
           }
-          header = htmlEncode_( header );
-          
-          var msgId = lastMsg.getId();
-          if( cfg.nacct > 0 ) {
-            header += createLink_(mailUrl_( msgId, 0 )) ;
-            for( var u=1; u < cfg.nacct; u ++ ) {
-              header += ' - ' + createLink_( mailUrl_( msgId, u ), 'user '+ u );
-            }
-            header += sprintf_( " (%s)\n", userMail );
-          }
-          if( header != '' ) {
-            var body = sprintf_( '<div style="%s">%s</div>%s', cfg.hdrcss, header.replace( /\n/g, "<br/>" ), lastMsg.getBody());
-          } else {
-            var body = lastMsg.getBody();
-          }
-          GmailApp.sendEmail(evernoteMail, subject, '', {htmlBody:body, attachments:lastMsg.getAttachments() })
-          log_( subject );
           // Remove label from thread
           threads[j].removeLabel(labels[i]);
-          if( sentLabel != undefined ) {
-            threads[j].addLabel(sentLabel);
-          }
           Utilities.sleep(1000);
         }
       }
@@ -141,14 +152,14 @@ function checkVersion_()
     var nextCheck = curTime - Math.floor( Math.random() * mSecDay );
     var userVersion = { nextCheck:nextCheck, version:0 };
   } else {
-    var userVersion = Utilities.jsonParse( cfg.version );
+    var userVersion = JSON.parse( cfg.version );
   }
   
   if( curTime > userVersion.nextCheck ) {
     // Read latest version from Internet
     try {
       var response = UrlFetchApp.fetch("http://gs.harryonline.net/gm2en.json");
-      var newVersion = Utilities.jsonParse( response.getContentText() );
+      var newVersion = JSON.parse( response.getContentText() );
       if( userVersion.version < newVersion.version  ) {
         // User has not been informed of new version yet
         var message = [];
@@ -205,6 +216,7 @@ function getUserProperties_()
 	'nbk_label' : 'Evernote',
 	'tag_label' : '',
 	'sent_label' : '',
+    'keep_sent' : 'off',
     'version' : 0
   };
   
@@ -221,12 +233,12 @@ function getUserProperties_()
           // Use default value
           cfg[p] = props[p];
       }
-      cfg[p] = props[p];
       UserProperties.setProperty(key, cfg[p]);
     } else {
       cfg[p] = userProps[key];
     }
   }
+  cfg.evernoteMail = evernoteMail;
 }  
 
 
@@ -292,7 +304,7 @@ function log_( subject )
 function createLogSheet_()
 {
   var ss = SpreadsheetApp.create("Gmail to Evernote Log");
-  log = ss.getId();
+  var log = ss.getId();
   sendEmail_( 'logsheet created', 
              sprintf_( "The Gmail to Evernote script has created a logsheet with ID: %s\nURL: %s" +
                       "\n\nTo change these settings, visit http://bit.ly/gmailevernote, " +
@@ -365,4 +377,16 @@ function sprintf_( format )
 function htmlEncode_( html )
 {
   return html.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+*  Get message body, in pre-text if plain text
+*/
+function getBody( message ) {
+  var htmlBody = message.getBody()
+  var plainBody = message.getPlainBody()
+  if( htmlBody !== plainBody ) {
+    return htmlBody
+  }
+  return '<pre style="white-space:pre-wrap">' + plainBody + '</pre>'
 }

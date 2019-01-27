@@ -1,0 +1,68 @@
+<style type="text/css">
+  body {
+    max-width: 640px;
+    margin: 10px auto;
+  }
+
+  @media (max-width: 659px) {
+    body>* {
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+  }
+
+  h1 {
+    background: url(//www.harryonline.net/assets/ho_logo_34.png) right top no-repeat transparent;
+    line-height: 36px;
+    font-size: 24px;
+    margin-bottom: 1rem;
+    font-style: italic;
+    border-bottom: 2px solid #F44336;
+  }
+
+  form {
+    padding-top: 1rem;
+    border-top: 2px solid #4CAF50;
+  }
+
+  form:not(.show-advanced) #advanced-section {
+    display: none;
+  }
+
+  .help-text {
+    font-size: 90%;
+  }
+
+  #advanced-section,
+  .custom-switch {
+    border-top: 1px solid #4CAF50;
+    padding-top: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  @media (min-width: 660px) {
+    .form-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .form-group>* {
+      flex: 0 0 480px;
+    }
+
+    .form-group>label {
+      flex: 0 0 150px;
+    }
+
+    .custom-switch {
+      padding-left: 160px;
+    }
+  }
+
+  input[type=number] {
+    max-width: 5em;
+    display: inline-block;
+  }
+</style>

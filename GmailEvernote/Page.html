@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <base target="_top">
+  <title>Gmail to Evernote</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS"
+    crossorigin="anonymous">
+  <?!= include('Stylesheet'); ?>
+</head>
+
+<body>
+  <? var data = getData(); ?>
+  <h1>Gmail to Evernote</h1>
+  <p class="help-text">
+    The Gmail to Evernote script will send all Gmail messages with a given label to Evernote. For more details,
+    see the web site at <a href="https://www.harryonline.net/tag/gm2en" target="_blank">www.harryonline.net/tag/gm2en</a>.
+  </p>
+  <div id="before-submit">
+    <p class="help-text">
+      Before you can complete this form, a notebook label must have been created in Gmail. This can be any label. A
+      message that has this label, or one of its sublabels, will be sent to Evernote.
+    </p>
+    <form id="form">
+      <input type="hidden" id="values" value="<?= JSON.stringify(data.values) ?>">
+      <div class="form-group">
+        <label for="evernoteMail">Evernote Address</label>
+        <input type="email" class="form-control" id="evernoteMail" required value="<?= data.values.evernoteMail || '' ?>">
+        <small class="form-text text-muted">Your Evernote email address, like <code>[your_username].abc123@m.evernote.com</code></small>
+      </div>
+
+      <div class="form-group">
+        <label for="nbk_label">Notebook Label</label>
+        <select class="custom-select custom-select-sm" id="nbk_label" required>
+          <? for (var i = 0; i < data.nbk_label.length; i++) { ?>
+          <option <? if (data.nbk_label[i]===data.values.nbk_label) { ?>selected
+            <? } ?>>
+            <?= data.nbk_label[i] ?>
+          </option>
+          <? } ?>
+        </select>
+        <small class="form-text text-muted">This label, or a sublabel, will be used for the selection of a notebook</small>
+      </div>
+
+      <div class="form-group">
+        <label for="trigger">Trigger every</label>
+        <div>
+          <input type="number" min="0" class="form-control" id="trigger" required value="<?= data.values.trigger || 15 ?>">
+          minutes (0 to disable script)
+        </div>
+        <small class="form-text text-muted">Set how often the mail will be checked</small>
+      </div>
+
+      <div class="custom-control custom-switch">
+        <input type="checkbox" class="custom-control-input" id="advanced-switch">
+        <label class="custom-control-label" for="advanced-switch">Show advanced options</label>
+      </div>
+
+      <div id="advanced-section">
+        <div class="form-group">
+          <label for="tag">Default Tag</label>
+          <input type="text" class="form-control" id="tag" value="<?= data.values.tag ?>">
+          <small class="form-text text-muted">A tag that will be assigned to all forwarded messages</small>
+        </div>
+
+        <div class="form-group">
+          <label for="log">Log Sheet ID</label>
+          <input type="text" class="form-control" id="log" value="<?= data.values.log ?>">
+          <small class="form-text text-muted">ID of the spreadsheet in which a log of forwarded messages is kept</small>
+        </div>
+
+        <div class="form-group">
+          <label for="nacct">Nr. of Accounts</label>
+          <div>
+            <input type="number" min="1" class="form-control" id="nacct" required value="<?= data.values.nacct ?>">
+          </div>
+          <small class="form-text text-muted">If you use multiple accounts, set this to the number of simultaneously
+            used
+            accounts</small>
+        </div>
+
+        <div class="form-group">
+          <label for="fields">Email Fields</label>
+          <input type="text" class="form-control" id="fields" value="<?= data.values.fields ?>">
+          <small class="form-text text-muted">Comma-separated list of email header fields, these will be added to the
+            Evernote note</small>
+        </div>
+
+        <div class="form-group">
+          <label for="hdrcss">Header CSS</label>
+          <input type="text" class="form-control" id="hdrcss" value="<?= data.values.hdrcss ?>">
+          <small class="form-text text-muted">CSS style for the header DIV that is added to the note</small>
+        </div>
+
+        <div class="form-group">
+          <label for="tag_label">Tag Label</label>
+          <select class="custom-select custom-select-sm" id="tag_label">
+            <? for (var i = 0; i < data.tag_label.length; i++) { ?>
+            <option <? if (data.tag_label[i]===data.values.tag_label) { ?>selected
+              <? } ?>>
+              <?= data.tag_label[i] ?>
+            </option>
+            <? } ?>
+          </select>
+          <small class="form-text text-muted">If set, only this label and sublabel will become tags in Evernote</small>
+        </div>
+
+        <div class="form-group">
+          <label for="sent_label">Sent Label</label>
+          <select class="custom-select custom-select-sm" id="sent_label">
+            <? for (var i = 0; i < data.sent_label.length; i++) { ?>
+            <option <? if (data.sent_label[i]===data.values.sent_label) { ?>selected
+              <? } ?>>
+              <?= data.sent_label[i] ?>
+            </option>
+            <? } ?>
+          </select>
+          <small class="form-text text-muted">This label will replace the notebook label after sending</small>
+        </div>
+
+        <div class="form-group">
+          <label for="keep_sent">Keep Sent</label>
+          <div class="custom-control custom-checkbox">
+            <input type="checkbox" class="custom-control-input" id="keep_sent" <?=data.values.keep_sent==='on' ?
+              'checked' : '' ?>>
+            <label class="custom-control-label" for="keep_sent">keep messages to Evernote in Sent Mail</label>
+          </div>
+        </div>
+
+      </div>
+      <div id="button-div">
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </div>
+    </form>
+  </div>
+  <div id="after-submit"></div>
+
+  <?!= include('JavaScript'); ?>
+</body>
+
+</html>

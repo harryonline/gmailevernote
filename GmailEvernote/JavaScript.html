@@ -1,0 +1,82 @@
+<script>
+  var form = document.getElementById('form');
+  form.onsubmit = submit;
+
+  var advancedSwitch = document.getElementById('advanced-switch');
+  advancedSwitch.addEventListener('change', changeAdvanced)
+
+  function submit(ev) {
+    ev.preventDefault();
+    console.dir(form);
+    var data = getFormData(form);
+    var buttonDiv = document.getElementById('button-div');
+    buttonDiv.innerHTML = '<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>';
+    google.script.run.withSuccessHandler(onSuccess).update(data);
+  }
+
+  function changeAdvanced(ev) {
+    if (ev.target.checked) {
+      form.classList.add('show-advanced');
+    } else {
+      form.classList.remove('show-advanced');
+    }
+  }
+
+  function getFormData(form) {
+    var elements = form.elements;
+    var result = {};
+    Array.from(elements).forEach(function (element) {
+      switch (element.id) {
+        case 'values':
+          console.log(JSON.parse(element.value));
+          break;
+        case 'advanced-switch':
+          break;
+        case 'keep_sent':
+          result[element.id] = element.checked ? 'on' : 'off';
+          break;
+        default: result[element.id] = element.value;
+      }
+    });
+    console.log(result);
+    return result;
+  }
+
+  function onSuccess(result) {
+    var beforeSubmit = document.getElementById('before-submit');
+    var afterSubmit = document.getElementById('after-submit');
+    beforeSubmit.style.display = 'none';
+    console.log(result);
+    var info = document.createElement('ul');
+    info.className = ('alert alert-info list-unstyled');
+    var trigger = document.createElement('li');
+    if (result.trigger && Number(result.trigger) > 0) {
+      trigger.innerHTML = sprintf_('Your mail will be checked every %s minutes.', result.trigger);
+    } else {
+      trigger.innerHTML = 'Your mail will not be checked.'
+    }
+    info.appendChild(trigger);
+    var changes = document.createElement('li');
+    if (result.changes.length > 0) {
+      changes.innerHTML = sprintf_('The following properties have been updated: %s.', result.changes.join(', '));
+    } else {
+      changes.innerHTML = 'No further changes have been made.';
+    }
+    info.appendChild(changes);
+    afterSubmit.appendChild(info);
+
+    if (result.log) {
+      var logText = document.createElement('p');
+      var logLink = 'https://docs.google.com/spreadsheet/ccc?key=' + result.log;
+      logText.innerHTML = 'You can view the log sheet at the link below:<br/><a href="%s">%s</a>'.replace(/%s/g, logLink);
+      afterSubmit.appendChild(logText);
+    }
+  }
+
+  function sprintf_(format) {
+    for (var i = 1; i < arguments.length; i++) {
+      format = format.replace(/%s/, arguments[i]);
+    }
+    return format;
+  }
+</script>

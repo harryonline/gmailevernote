@@ -1,7 +1,7 @@
-﻿/**
+/**
 * ---GMail to Evernote---
 *
-*  Copyright (c) 2012 Harry Oosterveen
+*  Copyright (c) 2012,2013,2018 Harry Oosterveen
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -18,15 +18,17 @@
 
 /**
 *  @author  Harry Oosterveen <mail@harryonline.net>
-*  @version 3
+*  @version 5
 *  @since   2012-11-12
 */
-
 
 /**
 *
 *  ChangeLog - After updates, users may have to reauthorize
 *  To do: update only on major updates
+*  2018-01-27: Use HTML interface for configuration
+*  2013-07-03: Fix issue where ID of newly created logfile were not stored in user property
+*  2013-06-29: Fix issues with new GA Script behaviour to keep sent messages in Sent mail, option to disable trigger in form
 *  2013-04-13: Checkversion: Minor versions (.x) used just for information sharing, major versions (x.) need updating software and possibly reauthorization
 *  2013-04-10: Catch gmail server errors and version check server errors
 *  2013-04-10: Set up and change settings via web interface
@@ -85,7 +87,11 @@
 *  gm2en_tag_label: if this label, or a sublabel, is used, it will become a tag in Evernote
 *
 *  gm2en_sent_label: if this ia an existing label, it will replace the notebook label after sending
-*  
+*
+*  New in version 4:
+*  -------------------
+*  gm2en_keep_sent: if on, keep the messages sent to Evernote in sent mail; default: off 
+*
 *  How to use:
 *  -----------
 *  Set up a trigger to run this function every 15 minutes (more or less often as you like).
