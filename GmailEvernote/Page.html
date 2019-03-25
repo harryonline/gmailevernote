@@ -45,8 +45,16 @@
       </div>
 
       <div class="form-group">
-        <label for="trigger">Trigger every</label>
+        <label for="trigger">Trigger every<?= data.trigger ?></label>
         <div>
+          <select class="form-control" id="trigger">
+            <option value="0" <?= data.trigger == 0 ? 'selected' : '' ?>>Disabled</option>
+            <option value="1" <?= data.trigger == 1 ? 'selected' : '' ?>>1 minute</option>
+            <option value="5" <?= data.trigger == 5 ? 'selected' : '' ?>>5 minutes</option>
+            <option value="10" <?= data.trigger == 10 ? 'selected' : '' ?>>10 minutes</option>
+            <option value="15" <?= data.trigger == 15 ? 'selected' : '' ?>>15 minutes</option>
+            <option value="30" <?= data.trigger == 30 ? 'selected' : '' ?>>30 minutes</option>
+          </select>
           <input type="number" min="0" class="form-control" id="trigger" required value="<?= data.values.trigger || 15 ?>">
           minutes (0 to disable script)
         </div>
